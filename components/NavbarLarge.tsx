@@ -1,11 +1,12 @@
 import Link from "next/link";
 import MaxWidthWrapper from "./common/MaxWidthWrapper";
 import NavbarMobile from "./NavbarMobile";
-import { LayoutDashboardIcon, Presentation } from "lucide-react";
+import { LayoutDashboardIcon, LogOut, Presentation } from "lucide-react";
 import { buttonVariants } from "./ui/button";
 import {
   RegisterLink,
   LoginLink,
+  LogoutLink,
 } from "@kinde-oss/kinde-auth-nextjs/components";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { KindeUser } from "@kinde-oss/kinde-auth-nextjs/types";
@@ -33,10 +34,15 @@ const NavbarLarge = async () => {
       {/* Right Men */}
       <div className="hidden md:flex items-center space-x-4">
         {user ? (
-          <Link href="/dashboard" className={buttonVariants()}>
-            DashBoard
-            <LayoutDashboardIcon className="h-6 w-6" />
-          </Link>
+          <>
+            <Link href="/dashboard" className={buttonVariants()}>
+              DashBoard
+              <LayoutDashboardIcon className="h-6 w-6" />
+            </Link>
+            <LogoutLink className={buttonVariants({ variant: "ghost" })}>
+              <LogOut className="h-6 w-6" />
+            </LogoutLink>
+          </>
         ) : (
           <div className="flex items-center gap-0">
             <LoginLink

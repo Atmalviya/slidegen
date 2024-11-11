@@ -63,9 +63,12 @@ body {
 }
 @layer base {
     * {
-        @apply border-border;
+        border-color: var(--border);
     }
     body {
-        @apply bg-background text-foreground;
+        background-color: var(
+            --background
+        ); /* Use the custom background variable */
+        color: var(--foreground); /* Use the custom foreground variable */
     }
 }
