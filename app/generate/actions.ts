@@ -7,11 +7,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { DOMParser } from "xmldom";
-import { arrayOfObjectsSchema, titleAndDescriptionSchema } from "@/zodSchemas";
+import { titleAndDescriptionSchema } from "@/zodSchemas";
 import pptxgen from "pptxgenjs";
 import { randomUUID } from "crypto";
 import path from "path";
-import { writeFile } from "fs";
 import os from "os";
 import type { UploadFileResult } from "uploadthing/types";
 import { UTApi } from "uploadthing/server";
@@ -48,12 +47,15 @@ export const generatePowerPoint = async (videoId: string) => {
     const dbUser = await db.user.findFirst({
       where: { id: user.id },
     });
+    if (!dbUser) {
+      redirect("/");
+    }
     const { subtitlesURL } = await getVideoSubtitles(videoId);
 
     if (!subtitlesURL) throw new Error("No subtitle found");
     const parsedSubtitles = await parseXmlContent(subtitlesURL);
     if (!parsedSubtitles) {
-      throw new Error("Failed to parse subtitles");
+      return { success: false, message: "Failed to parse subtitles" };
     }
     const fullText = parsedSubtitles?.map((item) => item.text).join(" ");
 
@@ -62,11 +64,14 @@ export const generatePowerPoint = async (videoId: string) => {
       convertToObjects(fullText),
     ]);
     if (!titleAndDescription) {
-      throw new Error("Failed to generate title and description");
+      return {
+        success: false,
+        message: "Failed to generate title and description",
+      };
     }
 
     if (!slideObjects) {
-      throw new Error("Failed to generate slide objects");
+      return { success: false, message: "Failed to generate slide objects" };
     }
 
     const { fileName, filePath } = await CreatePowerPointFromArrayOfObjects(
@@ -79,7 +84,10 @@ export const generatePowerPoint = async (videoId: string) => {
     const uploadResult = await uploadPowerPoint(fileBuffer, fileName);
     console.log({ uploadResult });
     if (!uploadResult?.[0].data?.url) {
-      throw new Error("Failed to upload PowerPoint file- no URL returned");
+      return {
+        success: false,
+        message: "Failed to upload PowerPoint file- no URL returned",
+      };
     }
 
     await db.generatedPowerPoints.create({
@@ -91,17 +99,15 @@ export const generatePowerPoint = async (videoId: string) => {
       },
     });
     await fs.promises.unlink(filePath);
+    return { success: true };
   } catch (error) {
-    console.error("Error in generatePowerPoint:", error);
-    throw new Error(
-      error instanceof Error ? error.message : "Failed to generate PowerPoint",
-    );
+    return { success: false, message: error };
   }
 };
 
-export async function getVideoSubtitles(
+export const getVideoSubtitles = async (
   videoId: string,
-): Promise<VideoMetaData> {
+): Promise<VideoMetaData | null> => {
   try {
     const options = {
       method: "GET",
@@ -131,11 +137,11 @@ export async function getVideoSubtitles(
     console.log(error);
     throw new Error("Failed to fetch video metadata");
   }
-}
+};
 
-export async function parseXmlContent(
+export const parseXmlContent = async (
   url: string,
-): Promise<SubtitleItem[] | null> {
+): Promise<SubtitleItem[] | null> => {
   try {
     const response = await axios.get(url);
     const parser = new DOMParser();
@@ -149,7 +155,7 @@ export async function parseXmlContent(
     console.log(error);
     return null;
   }
-}
+};
 
 export const createTitleAndDescription = async (
   transcript: string,

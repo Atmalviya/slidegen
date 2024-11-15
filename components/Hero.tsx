@@ -29,7 +29,7 @@ const Hero = () => {
                 Get Started
               </LoginLink>
               <Link
-                href="/"
+                href="/generate"
                 className={buttonVariants({
                   variant: "secondary",
                   className: "w-full sm:w-auto",

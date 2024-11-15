@@ -6,7 +6,12 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { generatePowerPoint } from "@/app/generate/actions";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 const GenerateForm = () => {
+  const { toast } = useToast();
+  const route = useRouter();
+
   const [url, setUrl] = useState<string | null>("");
   const [isValide, setIsValide] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,10 +68,24 @@ const GenerateForm = () => {
     try {
       console.log("videoId", videoId);
       const res = await generatePowerPoint(videoId);
+
       if (res.success) {
         setLoading(false);
+        toast({
+          title: "Presentation generated successfully",
+          description: "Redirecting to dashboard",
+          variant: "default",
+          duration: 5000,
+        });
+        route.push("/dashboard");
       } else {
         setLoading(false);
+        toast({
+          title: "Error generating presentation",
+          description: "Please try again later",
+          variant: "destructive",
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.log(error);
