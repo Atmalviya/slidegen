@@ -9,7 +9,7 @@ const Page = async () => {
   const user: KindeUser<object> | null = await getUser();
 
   if (!user || !user.id) {
-    redirect("/auth-callback");
+    redirect("/");
   }
 
   return <GenerateForm />;

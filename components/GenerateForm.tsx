@@ -94,7 +94,7 @@ const GenerateForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-200 via-white to-violet-100 py-12">
       <MaxWidthWrapper>
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">
