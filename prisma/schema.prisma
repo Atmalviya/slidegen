@@ -24,7 +24,7 @@ model GeneratedPowerPoints {
 }
 
 model User {
-  id          String                 @unique
+  id          String                 @id
   name        String
   email       String
   createAt    DateTime               @default(now()) @map("created_at")

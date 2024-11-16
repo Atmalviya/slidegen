@@ -1,19 +1,22 @@
+"use client";
 import Link from "next/link";
 import MaxWidthWrapper from "./common/MaxWidthWrapper";
 import NavbarMobile from "./NavbarMobile";
-import { LayoutDashboardIcon, LogOut, Presentation } from "lucide-react";
-import { buttonVariants } from "./ui/button";
-import {
-  RegisterLink,
-  LoginLink,
-  LogoutLink,
-} from "@kinde-oss/kinde-auth-nextjs/components";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { KindeUser } from "@kinde-oss/kinde-auth-nextjs/types";
+import { LayoutDashboardIcon, Presentation } from "lucide-react";
+import { Button, buttonVariants } from "./ui/button";
+import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import { UserResource } from "@clerk/types";
 
-const NavbarLarge = async () => {
-  const { getUser } = getKindeServerSession();
-  const user: KindeUser<object> | null = await getUser();
+interface NavbarProps {
+  user: UserResource | null;
+  isSignedIn: boolean;
+}
+const NavbarLarge = () => {
+  const { isSignedIn, user } = useUser();
+  const navbarProps: NavbarProps = {
+    user: user || null,
+    isSignedIn: isSignedIn || false,
+  };
   return (
     <MaxWidthWrapper className="flex items-center justify-between px-8 py-4 w-full text-gray-900 border-b border-gray-100">
       {/* Left Men */}
@@ -29,33 +32,25 @@ const NavbarLarge = async () => {
           <Link href="/generate">Generate</Link>
         </div>
       </div>
-      <NavbarMobile user={user} />
+      <NavbarMobile user={navbarProps.user} />
       {/* Right Men */}
       <div className="hidden md:flex items-center space-x-4">
-        {user ? (
-          <>
+        {isSignedIn ? (
+          <div className="flex items-center gap-5">
             <Link href="/dashboard" className={buttonVariants()}>
               DashBoard
               <LayoutDashboardIcon className="h-6 w-6" />
             </Link>
-            <LogoutLink className={buttonVariants({ variant: "ghost" })}>
-              <LogOut className="h-6 w-6" />
-            </LogoutLink>
-          </>
+            <UserButton />
+          </div>
         ) : (
-          <div className="flex items-center gap-0">
-            <LoginLink
-              // href="/login"
-              className={buttonVariants({ variant: "ghost" })}
-            >
-              Login
-            </LoginLink>
-            <RegisterLink
-              // href="/register"
-              className={buttonVariants()}
-            >
-              Register
-            </RegisterLink>
+          <div className="flex items-center gap-1">
+            <SignInButton>
+              <Button variant="outline">Login</Button>
+            </SignInButton>
+            <SignUpButton>
+              <Button className={buttonVariants()}>Register</Button>
+            </SignUpButton>
           </div>
         )}
       </div>

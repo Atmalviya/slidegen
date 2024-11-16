@@ -6,14 +6,13 @@ import { MenuIcon } from "lucide-react";
 import Link, { LinkProps } from "next/link";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "./ui/scroll-area";
-import {
-  RegisterLink,
-  LoginLink,
-  LogoutLink,
-} from "@kinde-oss/kinde-auth-nextjs/components";
-import { KindeUser } from "@kinde-oss/kinde-auth-nextjs/types";
+import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { UserResource } from "@clerk/types";
 
-const NavbarMobile = ({ user }: { user: KindeUser<object> | null }) => {
+interface NavbarMobileProps {
+  user: UserResource | null;
+}
+const NavbarMobile = ({ user }: NavbarMobileProps) => {
   const [open, setOpen] = useState<boolean>(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -33,20 +32,22 @@ const NavbarMobile = ({ user }: { user: KindeUser<object> | null }) => {
               Generate
             </MobileLink>
             {user ? (
-              <div className=" flex flex-col space-y-3">
+              <div className="flex flex-col space-y-3">
                 <MobileLink href="/dashboard">Dashboard</MobileLink>
-                <LogoutLink className={buttonVariants()}>Logout</LogoutLink>
+                <UserButton />
               </div>
             ) : (
-              <div className=" flex flex-col space-y-3">
-                <LoginLink className={buttonVariants({ variant: "secondary" })}>
-                  Login
-                </LoginLink>
-                <RegisterLink
-                  className={buttonVariants({ variant: "default" })}
-                >
-                  Register
-                </RegisterLink>
+              <div className="flex flex-col space-y-3">
+                <SignInButton>
+                  <Button variant="secondary" className="w-full">
+                    Login
+                  </Button>
+                </SignInButton>
+                <SignUpButton>
+                  <Button className={buttonVariants({ className: "w-full" })}>
+                    Register
+                  </Button>
+                </SignUpButton>
               </div>
             )}
           </div>

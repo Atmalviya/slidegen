@@ -1,14 +1,11 @@
 "use server";
 import { db } from "@/lib/db";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { KindeUser } from "@kinde-oss/kinde-auth-nextjs/types";
-
+import { currentUser } from "@clerk/nextjs/server";
 export const createUserIfNull = async () => {
   try {
-    const { getUser } = getKindeServerSession();
-    const user: KindeUser<object> | null = await getUser();
+    const user = await currentUser();
 
-    if (!user || !user.id || !user.email) {
+    if (!user || !user.id || !user?.emailAddresses[0].emailAddress) {
       return { success: false };
     }
     const existingUser = await db.user.findUnique({
@@ -20,8 +17,8 @@ export const createUserIfNull = async () => {
       await db.user.create({
         data: {
           id: user.id,
-          name: user.given_name + " " + user.family_name,
-          email: user.email,
+          name: user.firstName + " " + user.lastName,
+          email: user?.emailAddresses[0].emailAddress,
         },
       });
     }

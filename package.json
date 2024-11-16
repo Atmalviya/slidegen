@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.3.4",
     "@google/generative-ai": "^0.21.0",
     "@kinde-oss/kinde-auth-nextjs": "^2.4.5",
     "@prisma/client": "^5.22.0",
@@ -28,6 +29,7 @@
     "prisma": "^5.22.0",
     "react": "^19.0.0-rc-02c0e824-20241028",
     "react-dom": "^19.0.0-rc-02c0e824-20241028",
+    "svix": "^1.40.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "uploadthing": "^7.3.0",

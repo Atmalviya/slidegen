@@ -1,7 +1,6 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import axios from "axios";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -15,6 +14,7 @@ import os from "os";
 import type { UploadFileResult } from "uploadthing/types";
 import { UTApi } from "uploadthing/server";
 import fs from "fs";
+import { currentUser } from "@clerk/nextjs/server";
 type VideoMetaData = {
   subtitlesURL: string | null;
 };
@@ -39,8 +39,7 @@ const utapi = new UTApi({
 
 export const generatePowerPoint = async (videoId: string) => {
   try {
-    const { getUser } = getKindeServerSession();
-    const user = await getUser();
+    const user = await currentUser();
     if (!user || !user.id) {
       redirect("/");
     }
@@ -197,23 +196,26 @@ export const convertToObjects = async (
   text: string,
   slideCount = DEFAULT_SLIDE_COUNT,
 ): Promise<slideContent[] | null> => {
-  const promptTemplate = `Create a PowerPoint presentation outline with exactly ${slideCount} slides based on the following text. Format your response as a JSON array where each slide is an object with a "title" and "content" field. The content field should be an array of up to 4 bullet points.
+  const promptTemplate = `Create a PowerPoint presentation outline with exactly ${slideCount} slides based on the following text. Format your response as a JSON array where each slide is an object with a "title" and "content" field. The content field must be an array with 2-3 bullet points.
+
+      Requirements:
+      - Exactly ${slideCount} slides
+      - Each slide MUST have 2-3 bullet points (this is required)
+      - Each bullet point should be clear and concise
+      - Response must be valid JSON array only
+      - No markdown, code blocks, or extra text
 
       Example format:
       [
         {
-          "title": "Slide Title about the topic",
-          "content": ["Bullet point 1", "Bullet point 2"]
+          "title": "Slide Title",
+          "content": [
+            "First bullet point with important information",
+            "Second bullet point with additional details",
+            "Third bullet point with concluding information"
+          ]
         }
       ]
-
-      Requirements:
-      - Exactly ${slideCount} slides
-      - Each slide must have 2-3 bullet points.
-      - Each bullet point should have 200-300 words.
-      - Response must be valid JSON
-      - No markdown formatting or extra text
-      - Only include the JSON array
 
       Text to process: ${text}`;
 
@@ -221,49 +223,78 @@ export const convertToObjects = async (
     const result = await model.generateContent(promptTemplate);
     const res = result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    // Clean up the response to ensure valid JSON
-    let cleanedResponse =
-      res ??
-      ""
-        .replace(/```json\s*|\s*```/gi, "")
-        .replace(/[\u201C\u201D]/g, '"')
-        .replace(/[\u2018\u2019]/g, "'")
-        .trim();
+    if (!res) {
+      throw new Error("Empty response from AI model");
+    }
 
-    // Ensure the response starts with [ and ends with ]
-    if (!cleanedResponse.startsWith("[")) {
-      cleanedResponse = "[" + cleanedResponse;
-    }
-    if (!cleanedResponse.endsWith("]")) {
-      cleanedResponse = cleanedResponse + "]";
-    }
+    const cleanedResponse = res
+      .replace(/```(?:json)?\s*|\s*```/gi, "")
+      .replace(/^\s*\[\s*\[/, "[")
+      .replace(/\]\s*\]\s*$/, "]")
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
+      .replace(/[\u2013\u2014]/g, "-")
+      .replace(/[\u2026]/g, "...")
+      .trim();
 
     try {
       const parsedResponse = JSON.parse(cleanedResponse);
 
-      // Validate the structure
-      if (Array.isArray(parsedResponse)) {
-        const validSlides = parsedResponse.filter(
-          (slide): slide is slideContent =>
+      if (!Array.isArray(parsedResponse)) {
+        throw new Error("Response is not an array");
+      }
+
+      const enhancedSlides = parsedResponse.map((slide) => {
+        if (!Array.isArray(slide.content) || slide.content.length < 2) {
+          const content = Array.isArray(slide.content)
+            ? slide.content[0]
+            : slide.content;
+          if (typeof content === "string") {
+            const sentences = content.split(/[.!?]+/).filter((s) => s.trim());
+            slide.content = sentences.slice(0, 3).map((s) => s.trim() + ".");
+
+            while (slide.content.length < 2) {
+              slide.content.push(`Additional point for ${slide.title}.`);
+            }
+          }
+        }
+        return slide;
+      });
+
+      const validSlides = enhancedSlides.filter(
+        (slide): slide is slideContent => {
+          return (
             typeof slide === "object" &&
             slide !== null &&
             typeof slide.title === "string" &&
             Array.isArray(slide.content) &&
-            slide.content.every((item: unknown) => typeof item === "string"),
-        );
+            slide.content.every((item: unknown) => typeof item === "string") &&
+            slide.content.length >= 2 &&
+            slide.content.length <= 4
+          );
+        },
+      );
 
-        // Ensure we have the correct number of slides
-        if (validSlides.length === slideCount) {
-          return validSlides;
-        }
+      if (validSlides.length === slideCount) {
+        return validSlides;
       }
+
+      while (validSlides.length < slideCount) {
+        validSlides.push({
+          title: `Additional Slide ${validSlides.length + 1}`,
+          content: [
+            "Key point about the topic.",
+            "Supporting information and details.",
+          ],
+        });
+      }
+
+      return validSlides.slice(0, slideCount);
     } catch (parseError) {
       console.error("JSON Parse Error:", parseError);
       console.error("Attempted to parse:", cleanedResponse);
+      return null;
     }
-
-    // If we get here, either parsing failed or validation failed
-    throw new Error("Failed to generate valid slide objects");
   } catch (error) {
     console.error("Error generating slide content:", error);
     return null;
@@ -345,7 +376,6 @@ export const uploadPowerPoint = async (
   fileName: string,
 ): Promise<UploadFileResult[] | null> => {
   try {
-    // console.log(fileBuffer, fileName);
     const file = new File([fileBuffer], fileName, {
       type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     });

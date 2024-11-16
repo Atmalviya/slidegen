@@ -2,17 +2,9 @@ import React from "react";
 import { GeneratedPowerPoints } from "@prisma/client";
 import MaxWidthWrapper from "@/components/common/MaxWidthWrapper";
 import DashboardPresentation from "@/components/DashboardPresentation";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { redirect } from "next/navigation";
 import { getPresentations } from "./actions";
 
 const Page = async () => {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-  if (!user) {
-    redirect("/login");
-  }
-
   const presentation: GeneratedPowerPoints[] = await getPresentations();
 
   return (
