@@ -32,9 +32,6 @@ const NavbarMobile = ({ user }: { user: KindeUser<object> | null }) => {
             >
               Generate
             </MobileLink>
-            <MobileLink href="/guidelines" onOpenChange={setOpen}>
-              Guidelines
-            </MobileLink>
             {user ? (
               <div className=" flex flex-col space-y-3">
                 <MobileLink href="/dashboard">Dashboard</MobileLink>

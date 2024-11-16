@@ -8,7 +8,7 @@ export const createUserIfNull = async () => {
     const { getUser } = getKindeServerSession();
     const user: KindeUser<object> | null = await getUser();
 
-    if (!user) {
+    if (!user || !user.id || !user.email) {
       return { success: false };
     }
     const existingUser = await db.user.findUnique({

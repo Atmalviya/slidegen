@@ -150,6 +150,9 @@ const GenerateForm = () => {
             <p className="text-center text-sm text-slate-500 mt-4">
               Supported formats: Youtube video URLs
             </p>
+            <div className="mt-4 text-center">
+              {error && <p className="text-sm text-red-500">{error}</p>}
+            </div>
           </Card>
         </div>
       </MaxWidthWrapper>

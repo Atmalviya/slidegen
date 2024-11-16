@@ -27,7 +27,6 @@ const NavbarLarge = async () => {
         </Link>
         <div className="space-x-8 hidden md:flex text-sm">
           <Link href="/generate">Generate</Link>
-          <Link href="/guidelines">Guidelines</Link>
         </div>
       </div>
       <NavbarMobile user={user} />

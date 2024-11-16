@@ -107,7 +107,7 @@ export const generatePowerPoint = async (videoId: string) => {
 
 export const getVideoSubtitles = async (
   videoId: string,
-): Promise<VideoMetaData | null> => {
+): Promise<VideoMetaData> => {
   try {
     const options = {
       method: "GET",
@@ -173,10 +173,10 @@ export const createTitleAndDescription = async (
       Transcript: ${transcript}`;
   try {
     const result = await model.generateContent(promptTemplate);
-    const res = result.response.candidates[0].content.parts[0].text;
+    const res = result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    const titleMatch = res.match(/Title:\s*(.*)/);
-    const descriptionMatch = res.match(/Description:\s*(.*)/);
+    const titleMatch = res?.match(/Title:\s*(.*)/);
+    const descriptionMatch = res?.match(/Description:\s*(.*)/);
 
     if (titleMatch && descriptionMatch) {
       return {
@@ -219,14 +219,16 @@ export const convertToObjects = async (
 
   try {
     const result = await model.generateContent(promptTemplate);
-    const res = result.response.candidates[0].content.parts[0].text;
+    const res = result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     // Clean up the response to ensure valid JSON
-    let cleanedResponse = res
-      .replace(/```json\s*|\s*```/gi, "") // Remove code blocks
-      .replace(/[\u201C\u201D]/g, '"') // Replace smart quotes
-      .replace(/[\u2018\u2019]/g, "'") // Replace smart single quotes
-      .trim();
+    let cleanedResponse =
+      res ??
+      ""
+        .replace(/```json\s*|\s*```/gi, "")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2018\u2019]/g, "'")
+        .trim();
 
     // Ensure the response starts with [ and ends with ]
     if (!cleanedResponse.startsWith("[")) {
@@ -247,7 +249,7 @@ export const convertToObjects = async (
             slide !== null &&
             typeof slide.title === "string" &&
             Array.isArray(slide.content) &&
-            slide.content.every((item) => typeof item === "string"),
+            slide.content.every((item: unknown) => typeof item === "string"),
         );
 
         // Ensure we have the correct number of slides
@@ -360,6 +362,6 @@ export const uploadPowerPoint = async (
       fileName,
       bufferSize: fileBuffer.length,
     });
-    throw new Error(`Failed to upload PowerPoint file: ${error.message}`);
+    throw new Error(`Failed to upload PowerPoint file`);
   }
 };
