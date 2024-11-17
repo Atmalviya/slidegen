@@ -376,15 +376,29 @@ export const uploadPowerPoint = async (
   fileName: string,
 ): Promise<UploadFileResult[] | null> => {
   try {
-    const file = new File([fileBuffer], fileName, {
+    const blob = new Blob([fileBuffer], {
       type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     });
-    const response = await utapi.uploadFiles([file]);
-    console.log({ response });
+
+    Object.defineProperties(blob, {
+      name: {
+        value: fileName,
+        writable: false,
+      },
+      lastModified: {
+        value: Date.now(),
+        writable: false,
+      },
+    });
+
+    const response = await utapi.uploadFiles([
+      blob as unknown as Parameters<typeof utapi.uploadFiles>[0][0],
+    ]);
+
     if (!response?.[0].data?.url) {
       throw new Error("Failed to upload file");
     }
-    console.log(response?.[0].data?.url);
+
     return response;
   } catch (error) {
     console.error("Upload error details:", {
